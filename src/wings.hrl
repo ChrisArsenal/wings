@@ -310,3 +310,82 @@
 	  mat_map  = none                        %Face per Material draw info
 	 }).
 
+
+-ifdef(WORK_IN_PROGRESS).
+%% Here are some suggested changes needed for moving each #we{} into its own
+%% process.
+
+-type st_generation() :: non_neg_integer().
+
+-record(st,
+	{
+	  %% 'objs' replaces 'shapes'. The keys is an integer (as before).
+	  %% The value is an #obj{} record (or a map).
+	  %% NOTE: It is probably useful to retrieve the objects in sorted
+	  %% order, so a gb_tree is probably better than a map.
+	  objs=gb_trees:empty() :: gb_trees:tree(),
+
+	  %% The current selection. Contains the IDs for each selected object.
+	  sel :: [integer()],
+
+          %% Continually increasing generation number. Must be increased
+          %% whenever there is a change to any #we{} or the selection.
+          %% Will be sent to the we process in each message.
+          gen :: st_generation(),
+
+	  %% The rest of #st{} is as before.
+	  ...
+	}).
+
+
+%% wings_obj is a new module for handling the non-geometry part
+%% of objects.
+
+%% All data that must be versioned in each we process. We keep
+%% those records in a map.
+
+-record(wst_versioned,
+        {
+          we :: #we{},
+          sel :: gb_sets(wings_sel:item_id()),
+          saved_mode :: wings_sel:mode()        %Only valid when invisible.
+        }).
+
+%% This record is the state data for the processes holding the #we{} records.
+%% NOTE: Should probably remain a record. We should attempt to make it
+%% internal to a single module, instead of having it globally visible.
+
+-record(wst,
+	{insts :: map(st_generation(), #wst_versioned{}),
+
+	 %% FIXME: Here we could keep some data that are used for drawing
+	 %% and picking. Not versioned.
+	 cached_normals,		      %FIXME: Just an example.
+	 data_for_picking		      %FIXME: Another example.
+	}).
+
+
+%% The Winged-Edge data structure.
+%% See http://www.cs.mtu.edu/~shene/COURSES/cs3621/NOTES/model/winged-e.html
+-record(we,
+	{es=array:new() :: array:array(),	%array containing edges
+	 lv=none :: 'none' | array:array(),	%Left vertex attributes
+	 rv=none :: 'none' | array:array(),	%Right vertex attributes,
+	 fs :: gb_trees:tree() | undefined,	%Faces (undefined during construction)
+	 he=gb_sets:empty() :: gb_sets:set(),	%Hard edges
+	 vc :: array:array() | undefined,       %Connection info (=incident edge)
+						% for vertices. (undefined during re-construction)
+	 vp=array:new() :: array:array(),	%Vertex positions.
+	 pst=gb_trees:empty(),                  %Plugin State Info,
+						%   gb_tree where key is plugin module
+	 mat=default,				%Materials.
+	 next_id=0 :: non_neg_integer(),	%Next free ID for vertices,
+						% edges, and faces.
+						% (Needed because we never re-use
+						%  IDs.)
+	 mirror=none :: 'none' | non_neg_integer(), %Mirror: none|Face
+	 holes=[] :: [integer()]		%List of hole faces.
+	}).
+
+
+-endif.
