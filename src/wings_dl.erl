@@ -120,6 +120,12 @@ update(Fun, Data) ->
 %%    #dlo{}          Updated #dlo{} record; Data not updated.
 %%    {#dlo{},Data}   Update #dlo{} record and Data.
 
+-type map_data() :: term().
+-type map_fun() :: fun((#dlo{}, map_data()) ->
+                              #dlo{} | {#dlo{},map_data()}).
+
+-spec map(map_fun(), map_data()) -> 'ok' | map_data().
+
 map(Fun, Data) ->
     case get_dl_data() of
 	undefined -> ok;
@@ -133,6 +139,11 @@ map(Fun, Data) ->
 %%    CallbackFun(#dlo{}, AccN)
 %%  for each #dlo{} record. The callback fun must return
 %%  the updated Acc value.
+
+-type fold_data() :: term().
+-type fold_fun() :: fun((#dlo{}, fold_data()) -> fold_data()).
+
+-spec fold(fold_fun(), fold_data()) -> fold_data().
 
 fold(Fun, Acc) ->
     #du{dl=Dlists} = get_dl_data(),
